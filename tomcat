@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+    def buildNumber = BUILD_NUMBER
+
+    environment{
+        PATH = "/opt/maven3/bin:$PATH"
+        
+    }
+    stages {
+        stage("Git checkout"){
+            steps{
+                git credentialsId: 'java home 2', url: 'https://github.com/ROHITH5511/jenkins.git' 
+            }
+        }
+    }    
+    stage("Maven Clean Package") {
+        
+           def mavenHome= tool name: "Maven",type:"maven" 
+      
+           sh "${mavenHome}/bin/mvn clean package"
+        }
+        stage("Build Docker Image") {
+           sh "docker build -t rohit5511/tomcat:${buildNumber} ."
+        }
+        stage("Docker Login and Push") {
+        
+        withCredentials([string(credentialsId: 'Docker', variable: 'Docker')]) {
+            sh "docker login -u rohit5511 -p ${Docker}"
+        }
+        sh "docker push rohit5511/tomcat:${buildNumber}"
+        stage("deploy-dev"){
+            steps{
+              sshagent(['tomcat-9.0']) {
+                    sh """
+                    scp -o StrictHostKeyChecking=no target/myweb.war ec2-user@172.31.40.224:/apache-tomcat-9.0.46/webapps/
+                    
+                    ssh ec2-user@172.31.40.224 /home/ec2-user/apache-tomcat-9.0.46/bin/shutdown.sh
+                    
+                    ssh ec2-user@172.31.40.224 /home/ec2-user/apache-tomcat-9.0.46/bin/startup.sh
+                    """
+                }
+            } 
+        }
+    }  
+}     
+
+  
+     
