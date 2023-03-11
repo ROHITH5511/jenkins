@@ -1,0 +1,28 @@
+
+pipleline{
+    agent any
+    stages{
+        stage("checkout"){
+            steps{
+                git credentialsId: 'java home 2', url: 'https://github.com/ROHITH5511/jenkins.git' 
+            }
+            
+        }
+        stage("build"){
+            steps{
+                sh "mvn clean package"
+            }
+        }
+        stage("test"){
+            steps{
+                sh "mvn test"
+            }
+        }
+        stage("deploy"){
+            steps{
+                sh"mvn deploy"
+            }
+        } 
+
+    }
+}   
